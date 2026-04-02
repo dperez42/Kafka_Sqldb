@@ -81,18 +81,19 @@ First Stream
 CREATE STREAM dim_sensores (KEY_COL VARCHAR KEY, id_sensor INT, nombre_sensor VARCHAR)
   WITH (KAFKA_TOPIC='dim_sensores', PARTITIONS=1, VALUE_FORMAT='AVRO');
 ----
++
 [source,sql]
 ----
 INSERT INTO dim_sensores (KEY_COL, id_sensor, nombre_sensor) VALUES ('X',1,'sensor 1');
 INSERT INTO dim_sensores (KEY_COL, id_sensor, nombre_sensor) VALUES ('Y',2,'sensor 2');
 ----
-
++
 [source,sql]
 ----
 SHOW TOPICS;
 PRINT dim_sensores FROM BEGINNING LIMIT 2;
 ----
-
++
 [source,sql]
 ----
 Key format: KAFKA_STRING
@@ -101,27 +102,27 @@ rowtime: 2026/04/02 16:16:35.392 Z, key: X, value: {"ID_SENSOR": 1, "NOMBRE_SENS
 rowtime: 2026/04/02 16:16:35.441 Z, key: Y, value: {"ID_SENSOR": 2, "NOMBRE_SENSOR": "sensor 2"}, partition: 0
 Topic printing ceased
 ----
-
++
 Now topic of readings:
-
++
 [source,sql]
 ----
 CREATE STREAM readings (KEY_COL VARCHAR KEY, id_sensor INT, value INT)
   WITH (KAFKA_TOPIC='readings', PARTITIONS=1, VALUE_FORMAT='AVRO');
 ----
-
++
 [source,sql]
 ---
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('X',1,1100);
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('Y',2,2000);
 ----
-
++
 [source,sql]
 ----
 SHOW TOPICS;
 PRINT readings FROM BEGINNING LIMIT 2;
 ----
-
++
 [source,sql]
 ----
 Key format: KAFKA_STRING
@@ -130,11 +131,11 @@ rowtime: 2026/04/02 16:24:11.151 Z, key: X, value: {"ID_SENSOR": 1, "VALUE": 110
 rowtime: 2026/04/02 16:24:11.194 Z, key: Y, value: {"ID_SENSOR": 2, "VALUE": 2000}, partition: 0
 Topic printing ceased
 ----
-
++
 Now a topic joinning de readings with dim_sensors:
-
++
 First, make a test:
-
++
 [source,sql]
 ----
 SELECT
@@ -147,7 +148,7 @@ SELECT
     ON T0.id_sensor = T1.id_sensor
 EMIT CHANGES;
 ----
-
++
 [source,bash]
 ----
 +------------------+------------------+------------------+------------------+
@@ -156,9 +157,9 @@ EMIT CHANGES;
 |1                 |1                 |sensor 1          |1100              |
 |2                 |2                 |sensor 2          |2000              |
 ----
-
++
 Evething ok?, create new stream/topic enrich
-
++
 [source,sql]
 ----
 CREATE STREAM IF NOT EXISTS reading_enrich WITH (KAFKA_TOPIC='reading_enrich', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO') 
@@ -172,14 +173,15 @@ AS SELECT
     ON T0.id_sensor = T1.id_sensor
 ;
 ----
-
++
 Check new Topic:
++
 [source,sql]
 ----
 SHOW TOPICS;
 PRINT reading_enrich FROM BEGINNING LIMIT 2;
 ----
-
++
 [source,sql]
 ----
 Key format: KAFKA_INT or KAFKA_STRING
@@ -188,19 +190,19 @@ rowtime: 2026/04/02 16:24:11.151 Z, key: 1, value: {"ID": 1, "NAME": "sensor 1",
 rowtime: 2026/04/02 16:24:11.194 Z, key: 2, value: {"ID": 2, "NAME": "sensor 2", "VALUE": 2000}, partition: 0
 Topic printing ceased
 ----
-
-Try with a new incoming reading from sensor 2.
-
++
+Try with a new incoming reading from sensor 2
++
 [source,sql]
 ----
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('4',2,9999);
 ----
-
++
 [source,sql]
 ----
 PRINT reading_enrich FROM BEGINNING LIMIT 10;
 ----
-
++
 [source,sql]
 ----
 Key format: KAFKA_INT or KAFKA_STRING
@@ -211,7 +213,7 @@ rowtime: 2026/04/02 17:09:22.582 Z, key: 2, value: {"ID": 2, "NAME": "sensor 2",
 ----
 
 3. Create the Sink connectors.
-
++
 We are going to create two sinks connections to mysql database:
 
 `insert` : insert all the readings in a table
