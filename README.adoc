@@ -33,8 +33,8 @@ docker exec -it ksqldb ksql http://ksqldb:8088
 +
 [source,sql]
 ----
-CREATE STREAM TEST01 (KEY_COL VARCHAR KEY, COL1 INT, COL2 VARCHAR)
-  WITH (KAFKA_TOPIC='test01', PARTITIONS=1, VALUE_FORMAT='AVRO');
+CREATE STREAM dim_sensores (KEY_COL VARCHAR KEY, id_sensor INT, nombre_sensor VARCHAR)
+  WITH (KAFKA_TOPIC='dim_sensores', PARTITIONS=1, VALUE_FORMAT='AVRO');
 ----
 +
 [source,sql]
