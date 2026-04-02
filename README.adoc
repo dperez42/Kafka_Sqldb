@@ -11,7 +11,7 @@ docker-compose up -d
 +
 [source,bash]
 ----
-➜ docker-compose ps
+➜ docker ps --format '{{.Names}}  {{.Image}}  {{.Status}}'
 ksqldb-cli  confluentinc/ksqldb-cli:0.29.0  Up 4 hours
 ksqldb-server  simple_kafka-ksqldb-server  Up 4 hours
 schema-registry  confluentinc/cp-schema-registry:7.8.0  Up 4 hours
