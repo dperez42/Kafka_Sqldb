@@ -73,14 +73,12 @@ Enter in KSQLDB CLI
 docker exec -it ksqldb-server ksql http://ksqldb:8088
 ----
 Or you can enter in the container via docker desktop and type "ksql"
-
-+
+First Stream
 [source,sql]
 ----
 CREATE STREAM dim_sensores (KEY_COL VARCHAR KEY, id_sensor INT, nombre_sensor VARCHAR)
   WITH (KAFKA_TOPIC='dim_sensores', PARTITIONS=1, VALUE_FORMAT='AVRO');
 ----
-
 [source,sql]
 ----
 INSERT INTO dim_sensores (KEY_COL, id_sensor, nombre_sensor) VALUES ('X',1,'sensor 1');
