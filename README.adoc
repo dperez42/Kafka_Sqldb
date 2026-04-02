@@ -112,18 +112,17 @@ CREATE STREAM readings (KEY_COL VARCHAR KEY, id_sensor INT, value INT)
 ----
 +
 [source,sql]
----
+----
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('X',1,1100);
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('Y',2,2000);
 ----
-
-
++
 [source,sql]
 ----
 SHOW TOPICS;
 PRINT readings FROM BEGINNING LIMIT 2;
 ----
-
++
 [source,sql]
 ----
 Key format: KAFKA_STRING
