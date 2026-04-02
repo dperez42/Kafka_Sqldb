@@ -87,8 +87,7 @@ rowtime: 2026/04/02 16:24:11.194 Z, key: Y, value: {"ID_SENSOR": 2, "VALUE": 200
 Topic printing ceased
 ----
 
-2. Now a topic joinning de readings with dim_sensors.
-Now topic of readings:
+2. Now a topic joinning de readings with dim_sensors:
 
 First, make a test:
 
@@ -120,24 +119,33 @@ Evething ok?, create new stream/topic enrich
 ----
 CREATE STREAM IF NOT EXISTS reading_enrich WITH (KAFKA_TOPIC='reading_enrich', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO') 
 AS SELECT
-    T0.id ROWKEY, -- KEY
-    T1.id as id,
+    T0.id_sensor ROWKEY, -- KEY
+    T1.id_sensor as id,
     T1.nombre_sensor as name,
     T0.value as value
     FROM readings T0
     INNER JOIN dim_sensores T1 WITHIN 3 DAYS
-    ON T0.id = T1.id
+    ON T0.id_sensor = T1.id_sensor
 ;
 ----
 
+Check new Topic:
 [source,sql]
----
-INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('X',1,1100);
-INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('Y',2,2000);
 ----
-[source,sql]
+SHOW TOPICS;
+PRINT reading_enrich FROM BEGINNING LIMIT 2;
+----
 
-3. Create the Sink connector
+[source,sql]
+----
+Key format: KAFKA_INT or KAFKA_STRING
+Value format: AVRO
+rowtime: 2026/04/02 16:24:11.151 Z, key: 1, value: {"ID": 1, "NAME": "sensor 1", "VALUE": 1100}, partition: 0
+rowtime: 2026/04/02 16:24:11.194 Z, key: 2, value: {"ID": 2, "NAME": "sensor 2", "VALUE": 2000}, partition: 0
+Topic printing ceased
+----
+
+3. Create the Sink connectors
 +
 [source,javascript]
 ----
