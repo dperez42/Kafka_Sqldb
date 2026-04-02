@@ -168,7 +168,8 @@ rowtime: 2026/04/02 17:09:22.582 Z, key: 2, value: {"ID": 2, "NAME": "sensor 2",
 
 3. Create the Sink connectors.
 
-We ara going to create two sinks connections to mysql:
+We are going to create two sinks connections to mysql database:
+----
 +
 * insert : insert all the readings in a table.
 * upsert : update the last reading of each sensor.
