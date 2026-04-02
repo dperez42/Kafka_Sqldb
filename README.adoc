@@ -215,19 +215,20 @@ rowtime: 2026/04/02 17:09:22.582 Z, key: 2, value: {"ID": 2, "NAME": "sensor 2",
 3. Create the Sink connectors.
 +
 We are going to create two sinks connections to mysql database:
-
++
 `insert` : insert all the readings in a table
-
++
 `upsert`: update the last reading of each sensor
-
++
 Here some commads:
++
 [source,sql]
 ----
 SHOW | LIST [SOURCE | SINK] CONNECTORS;
 DROP CONNECTOR [IF EXISTS] "connector_name";
 DESCRIBE CONNECTOR "connector_name";
 ----
-
++
 [source,sql]
 ----
 CREATE SINK CONNECTOR IF NOT EXISTS "mysql-insert-sink"  WITH (
@@ -256,9 +257,9 @@ CREATE SINK CONNECTOR IF NOT EXISTS "mysql-insert-sink"  WITH (
     "transforms.addSome.static.value"= 'reading_enrich'
 );
 ----
-
++
 And upsert sink type:
-
++
 [source,sql]
 ----
 CREATE SINK CONNECTOR IF NOT EXISTS "mysql-upsertA-sink"  WITH (
@@ -291,7 +292,7 @@ CREATE SINK CONNECTOR IF NOT EXISTS "mysql-upsertA-sink"  WITH (
 );
 ----
 
-NOTE:
+NOTES:
 - Name of columns are case sensitive. 
 
 Things to customise for your environment:
