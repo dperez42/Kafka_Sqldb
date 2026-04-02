@@ -12,12 +12,14 @@ docker-compose up -d
 [source,bash]
 ----
 ➜ docker-compose ps
-CONTAINER ID   IMAGE                                   COMMAND                  CREATED        STATUS       PORTS                                             NAMES
-8dbb411756e8   confluentinc/ksqldb-cli:0.29.0          "/bin/sh"                10 hours ago6746746743f042bdde   c66743f042bdde   confluentinc/cp-kafka:latest            "/etc/confluent/dock…"   10 hours ago   Up 4 hours   0.0.0.0:29092->29092/tcp, [::]:29092->29092/tcp   kafka-broker
-0838a81d010b   phpmyadmin                              "/docker-entrypoint.…"   10 hours ago   Up 4 hours   0.0.0.0:8082->80/tcp, [::]:8082->80/tcp           simple_kafka-phpmyadmin-1
-65cfbe8ef6ae   confluentinc/cp-zookeeper:latest        "/etc/confluent/dock…"   10 hours ago   Up 4 hours   0.0.0.0:2181->2181/tcp, [::]:2181->2181/tcp       zookeeper
-18ae21041828   provectuslabs/kafka-ui                  "/bin/sh -c 'java --…"   10 hours ago   Up 4 hours   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp       kafka-ui
-e3c92a44d09e   simple_kafka-mysql                      "docker-entrypoint.s…"   10 hours ago   Up 4 hours   0.0.0.0:3306->3306/tcp, [::]:3306->3306/tcp       simple_kafka-mysql-1
+ksqldb-cli  confluentinc/ksqldb-cli:0.29.0  Up 4 hours
+ksqldb-server  simple_kafka-ksqldb-server  Up 4 hours
+schema-registry  confluentinc/cp-schema-registry:7.8.0  Up 4 hours
+kafka-broker  confluentinc/cp-kafka:latest  Up 4 hours
+simple_kafka-phpmyadmin-1  phpmyadmin  Up 4 hours
+zookeeper  confluentinc/cp-zookeeper:latest  Up 4 hours
+kafka-ui  provectuslabs/kafka-ui  Up 4 hours
+simple_kafka-mysql-1  simple_kafka-mysql  Up 4 hours
 ----
 
 3. Create test topics + data using ksqlDB (but it's still just a Kafka topic under the covers)
