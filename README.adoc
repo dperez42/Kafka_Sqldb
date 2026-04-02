@@ -65,14 +65,14 @@ simple_kafka-mysql-1  simple_kafka-mysql  Up 4 hours
 ----
 
 3. Create test topics + data using ksqlDB (but it's still just a Kafka topic under the covers)
-
-Enter in KSQLDB CLI:
++
+Enter in KSQLDB CLI
 +
 [source,bash]
 ----
 docker exec -it ksqldb-server ksql http://ksqldb:8088
 ----
-Or you can enter in the container via docker desktop and type "ksql".
+Or you can enter in the container via docker desktop and type "ksql"
 
 +
 [source,sql]
