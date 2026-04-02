@@ -30,25 +30,25 @@ zookeeper         /etc/confluent/docker/run        Up             2181/tcp, 2888
 ----
 docker exec -it ksqldb ksql http://ksqldb:8088
 ----
-+
+
 [source,sql]
 ----
 CREATE STREAM dim_sensores (KEY_COL VARCHAR KEY, id_sensor INT, nombre_sensor VARCHAR)
   WITH (KAFKA_TOPIC='dim_sensores', PARTITIONS=1, VALUE_FORMAT='AVRO');
 ----
-+
+
 [source,sql]
 ----
 INSERT INTO dim_sensores (KEY_COL, id_sensor, nombre_sensor) VALUES ('X',1,'sensor 1');
 INSERT INTO dim_sensores (KEY_COL, id_sensor, nombre_sensor) VALUES ('Y',2,'sensor 2');
 ----
-+
+
 [source,sql]
 ----
 SHOW TOPICS;
 PRINT dim_sensores FROM BEGINNING LIMIT 2;
 ----
-+
+
 [source,sql]
 ----
 Key format: KAFKA_STRING
@@ -65,16 +65,19 @@ Now topic of readings:
 CREATE STREAM readings (KEY_COL VARCHAR KEY, id_sensor INT, value INT)
   WITH (KAFKA_TOPIC='readings', PARTITIONS=1, VALUE_FORMAT='AVRO');
 ----
+
 [source,sql]
 ---
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('X',1,1100);
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('Y',2,2000);
 ----
+
 [source,sql]
 ----
 SHOW TOPICS;
 PRINT readings FROM BEGINNING LIMIT 2;
 ----
+
 [source,sql]
 ----
 Key format: KAFKA_STRING
@@ -88,6 +91,7 @@ Topic printing ceased
 Now topic of readings:
 
 First, make a test:
+
 [source,sql]
 ----
 SELECT
@@ -100,6 +104,7 @@ SELECT
     ON T0.id_sensor = T1.id_sensor
 EMIT CHANGES;
 ----
+
 [source,bash]
 ----
 +------------------+------------------+------------------+------------------+
@@ -109,7 +114,7 @@ EMIT CHANGES;
 |2                 |2                 |sensor 2          |2000              |
 ----
 
-Evething ok, create new stream/topic enrich
+Evething ok?, create new stream/topic enrich
 
 [source,sql]
 ----
@@ -124,6 +129,7 @@ AS SELECT
     ON T0.id = T1.id
 ;
 ----
+
 [source,sql]
 ---
 INSERT INTO readings (KEY_COL, id_sensor, value) VALUES ('X',1,1100);
