@@ -1,0 +1,23 @@
+CREATE SINK CONNECTOR IF NOT EXISTS "mysql-upsert-sink"  WITH (
+    "task.max"='1',
+    "connection.url"= 'jdbc:mysql://mysql:3306/temp_db',
+    "connection.user"= 'myuser',
+    "connection.password"= 'mypassword',
+    "topics"= 'T1_T2',
+    "connector.class"= 'io.confluent.connect.jdbc.JdbcSinkConnector',
+    "key.converter"='org.apache.kafka.connect.storage.StringConverter',
+    "value.converter"='io.confluent.connect.avro.AvroConverter',
+    "value.converter.schema.registry.url"='http://schema-registry:8081',
+    "table.name.format"= 'kafka_upsert_${topic}',
+    "auto.create"= 'true',
+    "auto.evolve"= 'true',
+    "insert.mode"= 'upsert',
+    "pk.mode"='record_key',
+    "pk.fields"='MESSAGE_KEY', 
+    "transforms"= 'dropSome,addSome',
+    "transforms.dropSome.type"='org.apache.kafka.connect.transforms.ReplaceField$Value',
+    --"transforms.dropSome.blacklist"= 'COL2',
+    "transforms.addSome.type"='org.apache.kafka.connect.transforms.InsertField$Value',
+    "transforms.addSome.partition.field"= '_partition',
+    "transforms.addSome.timestamp.field"= 'RECORD_TS'
+);

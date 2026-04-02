@@ -1,0 +1,162 @@
+ksql
+KSQLDB commands: https://docs.confluent.io/platform/current/ksqldb/developer-guide/ksqldb-reference/quick-reference.html
+https://medium.com/data-science/stream-processing-and-data-analysis-with-ksqldb-97f1ca4fcf6a
+
+https://www.youtube.com/watch?v=b-3qN_tlYR4&t=1683s
+https://github.com/confluentinc/demo-scene/tree/master/kafka-to-database
+
+show connectors;
+show topics;
+show streams;
+show tables;
+show queries;
+
+describe stream/table_name extended;
+
+pause all;
+resume all;
+terminate all;
+----------------------------------------------------------------------------
+topics
+
+SHOW TOPICS;
+
+PRINT 'test' FROM BEGINNING;
+
+- Create a TOPIC from a STREAM
+CREATE STREAM TEST_JSON_STREAM WITH (KAFKA_TOPIC='TEST_JSON_STREAM', PARTITIONS=1, REPLICAS=1) AS SELECT * FROM STREAM_TEST;
+
+----------------------------------------------------------------------------
+STREAMS:
+SHOW STREAMS;
+ 
+CREATE STREAM IF NOT EXISTS STREAM_TEST (id VARCHAR) WITH (KAFKA_TOPIC='test', VALUE_FORMA
+T='JSON');
+
+--- create 2 topics: tabla sensores y tabla mediciones
+
+CREATE STREAM IF NOT EXISTS STREAM_T1 (id VARCHAR, name VARCHAR) WITH (KAFKA_TOPIC='T1', PARTITIONS=1, REPLICAS=1,VALUE_FORMAT='AVRO');
+INSERT INTO STREAM_T1 (id, name) VALUES ('1','sensor1');
+INSERT INTO STREAM_T1 (id, name) VALUES ('2','sensor2');
+note: le estamos dando un valor la key
+PRINT T1 FROM BEGINNING;
+
+CREATE STREAM IF NOT EXISTS  STREAM_T2 (id VARCHAR, value INT) WITH (KAFKA_TOPIC='T2', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO');
+INSERT INTO STREAM_T2 (id, value) VALUES ('1',500);
+INSERT INTO STREAM_T2 (id, value) VALUES ('2',1500);
+
+CREATE STREAM IF NOT EXISTS  STREAM_T3 (id VARCHAR, other_value INT) WITH (KAFKA_TOPIC='T3', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO');
+INSERT INTO STREAM_T3 (id, other_value) VALUES ('1',0);
+INSERT INTO STREAM_T3 (id, other_value) VALUES ('2',0);
+
+
+SELECT * FROM  STREAM_T1 EMIT CHANGES LIMIT 10;
+SELECT * FROM  STREAM_T2 EMIT CHANGES LIMIT 10;
+SELECT * FROM  STREAM_T3 EMIT CHANGES LIMIT 10;
+
+-- CHECKING the JOIN USE INNER JOIN BETTER to elimnate mediciones without sensor
+SELECT 
+    T1.id, 
+    T2.id as id,
+    T1.name as name,
+    T2.value as value
+    FROM STREAM_T2 T2
+    INNER JOIN  STREAM_T1 T1 WITHIN 3 DAYS
+    ON T2.id = T1.id
+EMIT CHANGES;
+el T1.id se comporta como KEY
+
+-- CREATE TOPIC 
+CREATE STREAM IF NOT EXISTS STREAM_T1_T2 WITH (KAFKA_TOPIC='T1_T2', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO') 
+AS SELECT 
+    T1.id ROWKEY, --es la KEY
+    T2.id as id,
+    T1.name as name,
+    T2.value as value
+    FROM STREAM_T2 T2
+    INNER JOIN  STREAM_T1 T1 WITHIN 3 DAYS
+    ON T2.id = T1.id;
+NOTA: Si le das el T1.id ROWKEY, de las el valor al key
+
+SELECT * FROM STREAM_T1_T2 EMIT CHANGES;
+
+
+--- JOIN 3 STREAMS
+SELECT 
+    T1.id,
+    T2.id as id,
+    T1.name as name,
+    T2.value as value,
+    T3.other_value as other_value
+    FROM STREAM_T2 T2
+    INNER JOIN  STREAM_T1 T1 WITHIN 3 DAYS
+    ON T2.id = T1.id
+    INNER JOIN  STREAM_T3 T3 WITHIN 3 DAYS
+    ON T2.id = T3.id
+EMIT CHANGES;
+-- create topic
+CREATE STREAM IF NOT EXISTS STREAM_T1_T2_T3 WITH (KAFKA_TOPIC='T1_T2_T3', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO') 
+AS SELECT
+    T1.id ROWKEY, --es la KEY
+    T2.id as id,
+    T1.name as name,
+    T2.value as value,
+    T3.other_value as other_value
+    FROM STREAM_T2 T2
+    INNER JOIN  STREAM_T1 T1 WITHIN 3 DAYS
+    ON T2.id = T1.id
+    INNER JOIN  STREAM_T3 T3 WITHIN 3 DAYS
+    ON T2.id = T3.id;
+
+PRINT 'T1_T2_T3' FROM BEGINNING;
+-- save in the database
+
+DROP STREAM STREAM_TEST;
+----------------------------------------------------------------------------
+CONNECTORS (SOURCE,SINKS):
+
+SHOW | LIST [SOURCE | SINK] CONNECTORS;
+DROP CONNECTOR [IF EXISTS] "connector_name";
+DESCRIBE CONNECTOR "connector_name";
+
+CREATE SOURCE CONNECTOR IF NOT EXISTS "AGP_UCA_BoardingPassData-source-connector"  WITH (
+    "database.names"= 'RealTimeStatsCollectionDB',
+    "database.hostname"= '192.168.227.248',
+    "database.port"= '1433',
+    "database.user"= 'ucacdc',
+    "database.password"= '8X01D3c¡5Aab-05rT-1z@1z417t1F-Iu$2TP',
+    "database.encrypt"= 'false',
+    "snapshot.mode"='schema_only',
+    "table.include.list"='dbo.BoardingPassData',
+    "tasks.max"='1',
+    "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+    "schema.history.internal.kafka.topic": "schema-changes.AGP_UCA_BoardingPassData"
+);
+
+CREATE SINK CONNECTOR IF NOT EXISTS "mysql-insert-sink"  WITH (
+    "task.max"='1',
+    "connection.url"= 'jdbc:mysql://mysql:3306/temp_db',
+    "connection.user"= 'myuser',
+    "connection.password"= 'mypassword',
+    "topics"= 'T1_T2',
+    "connector.class"= 'io.confluent.connect.jdbc.JdbcSinkConnector',
+    "key.converter"='org.apache.kafka.connect.storage.StringConverter',
+    "value.converter"='io.confluent.connect.avro.AvroConverter',
+    "value.converter.schema.registry.url"='http://schema-registry:8081',
+    "table.name.format"= 'kafka_${topic}',
+    "auto.create"= 'true',
+    "auto.evolve"= 'true',
+    "insert.mode"= 'insert'
+);
+
+
+"insert.mode"='insert', (solo insert, no necesitas pk.mode o pk.field)
+"insert.mode"='upsert', (insert o actualiza según primary key, necesitas pk.mode y pk.field)
+
+"pk.mode"='record.value' (usa el contenido el mensaje)
+"pk.mode"='key.value' (usa el contenido la key)
+
+"pk.fields"='id_col_primary_key' (nombre de la columna key)
+
+Si usas el pk.mode = record.value podrás poner pk.mode una columna
+Si usas el pk.mode = record.key podrás poner pk.fields = 'MESSAGE_KEY'

@@ -1,0 +1,161 @@
+networks:
+  kafka-net:
+    driver: bridge
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+    networks:
+        - kafka-net
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka
+    container_name: kafka-broker
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    #volumes:
+    #  - ./kafka/data:/var/lib/kafka/data
+    networks:
+        - kafka-net
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.8.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+    - kafka
+    ports:
+    - 8081:8081
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+        - kafka-net
+  ksqldb-server:
+    build:
+      context: ./ksqldb/
+      dockerfile: dockerfile
+    # image: confluentinc/ksqldb-server:0.29.0
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+    - kafka
+    - schema-registry
+    ports:
+    - 8088:8088
+    environment:
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: kafka:9092
+      # LOGGING
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
+
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KSQL_KSQL_SERVICE_ID: confluent_01
+      KSQL_KSQL_HIDDEN_TOPICS: ^_.*
+      KSQL_KSQL_STREAMS_AUTO_OFFSET_RESET: earliest
+      KSQL_KSQL_CONNECT_WORKER_CONFIG: /connect/connect.properties
+      # COONECT
+      KSQL_CONNECT_BOOTSTRAP_SERVERS: kafka:9092
+      KSQL_CONNECT_REST_ADVERTISED_HOST_NAME: ksqldb
+      KSQL_CONNECT_GROUP_ID: ksqldb-kafka-connect-group-01
+      KSQL_CONNECT_CONFIG_STORAGE_TOPIC: _ksqldb-kafka-connect-group-01-configs
+      KSQL_CONNECT_OFFSET_STORAGE_TOPIC: _ksqldb-kafka-connect-group-01-offsets
+      KSQL_CONNECT_STATUS_STORAGE_TOPIC: _ksqldb-kafka-connect-group-01-status
+      KSQL_CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KSQL_CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KSQL_CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KSQL_CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KSQL_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: '1'
+      KSQL_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: '1'
+      KSQL_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: '1'
+      KSQL_CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: '[%d] %p %X{connector.context}%m
+        (%c:%L)%n'
+      KSQL_CONNECT_PLUGIN_PATH: /home/appuser/share/java,/home/appuser/confluent-hub-components/,/data/connect-jars
+      KSQL_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+    volumes:
+    - ./ksqldb/test:/home/appuser/test
+    networks:
+      - kafka-net
+  ksqldb-cli:
+    image: confluentinc/ksqldb-cli:0.29.0
+    container_name: ksqldb-cli
+    depends_on:
+    - kafka
+    - schema-registry
+    - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
+    environment:
+      KSQL_CONFIG_DIR: /etc/ksqldb
+    volumes:
+    - ./src:/opt/app/src
+    networks:
+      - kafka-net
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    networks:
+        - kafka-net
+  mysql:
+    build:
+      context: ./mysql/
+      dockerfile: Dockerfile 
+    restart: always
+    env_file:
+      - ./mysql/.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - kafka-net
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+      - MYSQL_ROOT_PASSWORD=mypassword 
+      - PMA_ARBITRARY=1
+    volumes:
+      - ./phpmyadmin/config/config/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
+    depends_on:
+      - mysql
+    networks:
+      - kafka-net
