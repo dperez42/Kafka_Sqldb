@@ -50,6 +50,10 @@ docker exec -it ksqldb-server /bin/ksql --file /home/appuser/init-sql/init.sql
 [source,bash]
 ----
 ➜ docker ps --format '{{.Names}}  {{.Image}}  {{.Status}}'
+----
++
+[source,bash]
+----
 ksqldb-cli  confluentinc/ksqldb-cli:0.29.0  Up 4 hours
 ksqldb-server  simple_kafka-ksqldb-server  Up 4 hours
 schema-registry  confluentinc/cp-schema-registry:7.8.0  Up 4 hours
