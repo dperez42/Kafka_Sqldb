@@ -6,7 +6,7 @@ This uses Docker Compose to run the Kafka Connect worker.
 ----
 start.bat
 ----
-
++
 [source,bash]
 ----
 @echo off
