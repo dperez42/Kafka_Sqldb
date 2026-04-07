@@ -1,0 +1,3 @@
+retention.ms=172800000   (2 dias)
+retention.ms=86400000    (1 dia)
+segment.bytes=1073741824 (1 GB)

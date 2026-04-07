@@ -1,0 +1,212 @@
+
+services:
+
+  zookeeperA:
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeperA
+    container_name: zookeeperA
+    ports:
+      - 22181:22181
+      - 22888:22888
+      - 23888:23888
+    volumes:
+      - ./zookeeperA/data:/data
+    environment:
+      ZOOKEEPER_SERVER_ID: 1    
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeperA:22888:23888
+      
+  broker1A:
+    image: confluentinc/cp-kafka
+    hostname: broker1A
+    container_name: broker1A
+    ports:
+      #- 9092:9092
+      - 29092:29092
+    depends_on:
+      - zookeeperA
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
+      
+      KAFKA_LISTENERS: PLAINTEXT://broker1A:9092,CONTROLLER://broker1A:29093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker1A:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker1A:29093,2@broker2A:39093'
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      #KAFKA_NODE_ID: 1      
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_AUTO_OFFSET_RESET: "latest"
+ 
+  broker2A:
+    image: confluentinc/cp-kafka
+    hostname: broker2A
+    container_name: broker2A
+    ports:
+      #- 9093:9093
+      - 29093:29093
+    depends_on:
+      - zookeeperA
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
+      
+      KAFKA_LISTENERS: PLAINTEXT://broker2A:9093,CONTROLLER://broker2A:39093,PLAINTEXT_HOST://0.0.0.0:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker2A:9093,PLAINTEXT_HOST://localhost:29093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker1A:29093,2@broker2A:39093' #put evey controllers
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      #KAFKA_NODE_ID: 1      
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_AUTO_OFFSET_RESET: "latest"
+  
+  zookeeperB:
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeperB
+    container_name: zookeeperB
+    ports:
+      - 32181:32181
+      - 32888:32888
+      - 33888:33888
+    volumes:
+      - ./zookeeperB/data:/data
+    environment:
+      ZOOKEEPER_SERVER_ID: 1    
+      ZOOKEEPER_CLIENT_PORT: 32181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeperB:32888:33888
+  
+  broker1B:
+    image: confluentinc/cp-kafka
+    hostname: broker1B
+    container_name: broker1B
+    ports:
+      #- 9192:9192
+      - 29192:29192
+    depends_on:
+      - zookeeperB
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeperB:32181
+      
+      KAFKA_LISTENERS: PLAINTEXT://broker1B:9192,CONTROLLER://broker1B:29193,PLAINTEXT_HOST://0.0.0.0:29192
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker1B:9192,PLAINTEXT_HOST://localhost:29192
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker1B:29193,2@broker2B:39193'
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      #KAFKA_NODE_ID: 1      
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_AUTO_OFFSET_RESET: "latest"
+
+  broker2B:
+    image: confluentinc/cp-kafka
+    hostname: broker2B
+    container_name: broker2B
+    ports:
+      #- 9193:9193
+      - 29193:29193
+    depends_on:
+      - zookeeperB
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeperB:32181
+      
+      KAFKA_LISTENERS: PLAINTEXT://broker2B:9193,CONTROLLER://broker2B:39193,PLAINTEXT_HOST://0.0.0.0:29193
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker2B:9193,PLAINTEXT_HOST://localhost:29193
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker1B:29193,2@broker2B:39193' #put evey controllers
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      #KAFKA_NODE_ID: 1      
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_AUTO_OFFSET_RESET: "latest"
+  
+  mirror-maker:
+    image: confluentinc/cp-kafka
+    hostname: mirror-maker
+    container_name: mirror-maker
+    volumes:
+      - ./mm2_config:/tmp/kafka/config
+    ports:
+      #- 9091:9091
+      - 29096:29096
+    depends_on:
+      - zookeeperA
+      - zookeeperB
+      - broker1A
+      - broker2A
+      - broker1B
+      - broker2B
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_NODE_ID: 1 
+      KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181,zookeeperB:32181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://mirror-maker:9091,CONTROLLER://mirror-maker:39091,PLAINTEXT_HOST://0.0.0.0:29096
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://mirror-maker:9091,PLAINTEXT_HOST://localhost:29096
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@mirror-maker:39091' #put evey controllers
+
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+      KAFKA_AUTO_OFFSET_RESET: "latest"
+  
+  kafbat-ui:
+    container_name: kafbat-ui
+    image: ghcr.io/kafbat/kafka-ui:v1.4.2
+    ports:
+      - 8090:8080
+    #volumes:
+    #  - ./katbat-ui/config.yml:/etc/kafbat/config.yml
+    environment:
+      #- SPRING_CONFIG_LOCATION=/etc/kafbat/config.yml
+      KAFKA_CLUSTERS_0_NAME: mycluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker1A:9092,broker2A:9093
+      KAFKA_CLUSTERS_1_NAME: othercluster
+      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: broker1B:9192,broker2B:9193
+    depends_on:
+      - broker1A
+      - broker2A
+      - broker1B

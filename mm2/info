@@ -1,0 +1,22 @@
+https://www.codestudy.net/blog/kafka-copy-topic-to-another-cluster/#google_vignette
+
+https://cwiki.apache.org/confluence/display/KAFKA/KIP-382%3A+MirrorMaker+2.0
+
+https://www.geeksforgeeks.org/apache-kafka/kafka-mirrormaker-management-via-cli/
+
+https://www.youtube.com/watch?v=50rss8aobUk&t=20s
+https://github.com/mordp1/espetinhodekafka/tree/main/kafka-prod/Day9-MirrorMaker
+
+!!!!
+https://medium.com/larus-team/how-to-setup-mirrormaker-2-0-on-apache-kafka-multi-cluster-environment-87712d7997a4
+
+https://medium.com/@penkov.vladimir/running-mirror-maker-2-on-kafka-connect-cluster-3b391d686efe
+
+
+
+connect-mirror-maker /tmp/kafka/config/mm2.properties
+
+kafka-topics --bootstrap-server broker1B:29093 --create --topic topic1 --partitions 3 --replication-factor 3 
+
+
+kafka-console-producer --bootstrap-server broker1A:29092 --topic topic1

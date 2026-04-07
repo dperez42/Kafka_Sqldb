@@ -1,0 +1,5 @@
+FROM confluentinc/cp-ksqldb-server:8.0.0
+RUN mkdir -p ~/confluent-hub-components/
+COPY ./connectors/ ./confluent-hub-components/
+COPY ./init/ /home/appuser/init-sql
+EXPOSE 8088

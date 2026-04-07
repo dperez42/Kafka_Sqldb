@@ -1,0 +1,108 @@
+https://www.tinybird.co/blog/mysql-cdc
+
+https://estuary.dev/blog/the-complete-change-data-capture-guide-for-mysql/
+
+https://github.com/dursunkoc/ksqlwithconnect/blob/main/mysql_source_connector.sql
+
+https://www.youtube.com/watch?v=Lq-qoMKSQLo
+https://github.com/soumilshah1995/DebeziumFlinkHudiSync/blob/main/docker-compose.yml
+
+
+By default, the generation of CDC events is enabled. You can confirm that this feature is enabled with this query: SHOW VARIABLES LIKE 'log_bin'. If the log_bin is set to ON, you are all set. If not, update the value to ON.
+
+This connector requires that the MySQL binlog_format is set to ROW. Check the server setting with SHOW VARIABLES LIKE 'binlog_format' and update the value if needed.
+
+Set binlog_row_image to FULL, unless you're working with systems that can handle partial row images.
+
+Ensure every table has a primary key, which is crucial for identifying and applying changes reliably downstream.
+
+Set an appropriate binlog retention period using either expire_logs_days (older versions) or binlog_expire_logs_seconds (MySQL 8.0+). Most CDC setups use 7 to 30 days of retention to account for pipeline delays and fault recovery.
+
+
+SET GLOBAL server_id=21
+SELECT @@server_id;
+
+server-id = 223344
+log_bin = mysql-bin
+binlog_format = row
+binlog_row_image = FULL
+gtid_mode = ON
+enforce-gtid-consistency = TRUE
+require_secure_transport=OFF
+
+** Create new user in mysql:
+mysql> CREATE USER 'debezium'@'%' IDENTIFIED WITH mysql_native_password BY 'MyStrongPass123!';
+mysql> GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON . TO 'debezium'@'%';
+mysql> FLUSH PRIVILEGES;
+
+
+GRANT ALL PRIVILEGES ON *.* TO ‘debezium’@’%’ IDENTIFIED BY ‘dbz’;
+FLUSH PRIVILEGES;
+
+SET @@binlog_rows_query_log_events=ON;
+
+Parse the binlog using a CDC connector or plugin that translates binary events into structured records (typically JSON).
+
+https://oneuptime.com/blog/post/2026-03-31-mysql-view-binary-log-events-show-binlog-events/view
+
+Send the change events to a messaging system like Apache Kafka or directly into target destinations via CDC platforms.
+
+To download connectors
+https://debezium.io/documentation/reference/stable/connectors/mysql.html
+https://debezium.io/releases/2.7/
+
+create a tabel with info of devices:
+use 
+
+CREATE TABLE SENSORS_METADATA (
+  deviceId VARCHAR(255) NOT NULL PRIMARY KEY,
+  Nombre  VARCHAR(255),
+  Tipo_Dispositivo VARCHAR(255),
+  Descripcion VARCHAR(255)
+);
+
+INSERT INTO [dbo].[SENSORS_METADATA]
+           ([deviceId]
+           ,[Nombre]
+           ,[Responsable_AENA]
+           ,[Tipo_Dispositivo]
+           ,[Descripcion])
+     VALUES
+           ('uuid1'
+           ,'sensor en baño 1'
+           ,'Sensor'
+           ,'Temperatura/Humedad'
+		   )
+GO;
+INSERT INTO [dbo].[SENSORS_METADATA]
+           ([deviceId]
+           ,[Nombre]
+           ,[Responsable_AENA]
+           ,[Tipo_Dispositivo]
+           ,[Descripcion])
+     VALUES
+           ('uuid2'
+           ,'sensor en baño 2'
+           ,'Sensor'
+           ,'Temperatura/Humedad'
+		   )
+GO;
+
+create the connector:
+
+{
+    "name": "inventory-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.{context}.{connector-name}Connector",
+        "database.hostname": "192.168.99.100",
+        "database.port": "3306",
+        "database.user": "debezium-user",
+        "database.password": "debezium-user-pw",
+        "database.server.id": "184054",
+        "topic.prefix": "fullfillment",
+        "database.include.list": "inventory",
+        "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
+        "schema.history.internal.kafka.topic": "schemahistory.fullfillment",
+        "include.schema.changes": "true"
+    }
+}

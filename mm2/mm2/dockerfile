@@ -1,0 +1,4 @@
+FROM apache/kafka-native:4.1.1
+RUN mkdir -p ~/mm2_config/
+COPY ./config/ ./mm2_config/
+EXPOSE 9094

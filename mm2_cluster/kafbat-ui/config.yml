@@ -1,0 +1,13 @@
+kafka:
+  clusters:
+    - name: Cluster-1
+      bootstrapServers: broker1A:9092,broker2A:9093
+      properties:
+        security.protocol: PLAINTEXT
+auth:
+  type: LOGIN_FORM
+spring:
+  security:
+    user:
+      name: admin
+      password: password
