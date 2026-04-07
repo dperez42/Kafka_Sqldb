@@ -18,7 +18,19 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: zookeeperA:22888:23888
-      
+
+  schema-registryA:
+    image: confluentinc/cp-schema-registry:7.8.0
+    hostname: schema-registryA
+    container_name: schema-registryA
+    depends_on:
+    - broker1A
+    - broker1B
+    ports:
+    - 8081:8081
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registryA
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker1A:9092,broker2A:9093
   broker1A:
     image: confluentinc/cp-kafka
     hostname: broker1A
@@ -32,7 +44,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
       
-      KAFKA_LISTENERS: PLAINTEXT://broker1A:9092,CONTROLLER://broker1A:29093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_LISTENERS: PLAINTEXT://broker1A:9092,CONTROLLER://broker1A:29093,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
       
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker1A:9092,PLAINTEXT_HOST://localhost:29092
@@ -49,7 +61,6 @@ services:
       #KAFKA_NODE_ID: 1      
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       KAFKA_AUTO_OFFSET_RESET: "latest"
- 
   broker2A:
     image: confluentinc/cp-kafka
     hostname: broker2A
@@ -63,7 +74,7 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
       
-      KAFKA_LISTENERS: PLAINTEXT://broker2A:9093,CONTROLLER://broker2A:39093,PLAINTEXT_HOST://0.0.0.0:29093
+      KAFKA_LISTENERS: PLAINTEXT://broker2A:9093,CONTROLLER://broker2A:39093,PLAINTEXT_HOST://localhost:29093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
       
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker2A:9093,PLAINTEXT_HOST://localhost:29093
@@ -99,6 +110,18 @@ services:
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: zookeeperB:32888:33888
   
+  schema-registryB:
+    image: confluentinc/cp-schema-registry:7.8.0
+    hostname: schema-registryB
+    container_name: schema-registryB
+    depends_on:
+    - broker2A
+    - broker2B
+    ports:
+    - 8082:8081
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registryA
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker1B:9192,broker2B:9193
   broker1B:
     image: confluentinc/cp-kafka
     hostname: broker1B
@@ -112,7 +135,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeperB:32181
       
-      KAFKA_LISTENERS: PLAINTEXT://broker1B:9192,CONTROLLER://broker1B:29193,PLAINTEXT_HOST://0.0.0.0:29192
+      KAFKA_LISTENERS: PLAINTEXT://broker1B:9192,CONTROLLER://broker1B:29193,PLAINTEXT_HOST://localhost:29192
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
       
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker1B:9192,PLAINTEXT_HOST://localhost:29192
@@ -129,7 +152,6 @@ services:
       #KAFKA_NODE_ID: 1      
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       KAFKA_AUTO_OFFSET_RESET: "latest"
-
   broker2B:
     image: confluentinc/cp-kafka
     hostname: broker2B
@@ -143,7 +165,7 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeperB:32181
       
-      KAFKA_LISTENERS: PLAINTEXT://broker2B:9193,CONTROLLER://broker2B:39193,PLAINTEXT_HOST://0.0.0.0:29193
+      KAFKA_LISTENERS: PLAINTEXT://broker2B:9193,CONTROLLER://broker2B:39193,PLAINTEXT_HOST://localhost:29193
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
       
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker2B:9193,PLAINTEXT_HOST://localhost:29193
@@ -166,7 +188,7 @@ services:
     hostname: mirror-maker
     container_name: mirror-maker
     volumes:
-      - ./mm2_config:/tmp/kafka/config
+      - ./mm2_config:/home/appuser
     ports:
       #- 9091:9091
       - 29096:29096
@@ -193,6 +215,68 @@ services:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
       KAFKA_AUTO_OFFSET_RESET: "latest"
   
+  ksqldb-server:
+    build:
+      context: ./ksqldb/
+      dockerfile: dockerfile
+    # image: confluentinc/ksqldb-server:0.29.0
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+    - broker1B
+    - broker2B
+    - schema-registryB
+    ports:
+    - 8088:8088
+    environment:
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: broker1B:9192,broker2B:9193
+      # LOGGING
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
+
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registryB:8081
+      KSQL_KSQL_SERVICE_ID: confluent_01
+      KSQL_KSQL_HIDDEN_TOPICS: ^_.*
+      KSQL_KSQL_STREAMS_AUTO_OFFSET_RESET: earliest
+      KSQL_KSQL_CONNECT_WORKER_CONFIG: /connect/connect.properties
+      # COONECT
+      KSQL_CONNECT_BOOTSTRAP_SERVERS: broker1B:9192,broker2B:9193
+      KSQL_CONNECT_REST_ADVERTISED_HOST_NAME: ksqldb
+      KSQL_CONNECT_GROUP_ID: ksqldb-kafka-connect-group-01
+      KSQL_CONNECT_CONFIG_STORAGE_TOPIC: _ksqldb-kafka-connect-group-01-configs
+      KSQL_CONNECT_OFFSET_STORAGE_TOPIC: _ksqldb-kafka-connect-group-01-offsets
+      KSQL_CONNECT_STATUS_STORAGE_TOPIC: _ksqldb-kafka-connect-group-01-status
+      KSQL_CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KSQL_CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registryB:8081
+      KSQL_CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KSQL_CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registryB:8081
+      KSQL_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: '1'
+      KSQL_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: '1'
+      KSQL_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: '1'
+      KSQL_CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: '[%d] %p %X{connector.context}%m
+        (%c:%L)%n'
+      KSQL_CONNECT_PLUGIN_PATH: /home/appuser/share/java,/home/appuser/confluent-hub-components/,/data/connect-jars
+      KSQL_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+    volumes:
+    - ./ksqldb/test:/home/appuser/test
+
+  ksqldb-cli:
+    image: confluentinc/ksqldb-cli:0.29.0
+    container_name: ksqldb-cli
+    depends_on:
+    - broker1B
+    - broker2B
+    - schema-registryB
+    - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
+    environment:
+      KSQL_CONFIG_DIR: /etc/ksqldb
+    volumes:
+    - ./src:/opt/app/src
+
   kafbat-ui:
     container_name: kafbat-ui
     image: ghcr.io/kafbat/kafka-ui:v1.4.2
@@ -204,8 +288,12 @@ services:
       #- SPRING_CONFIG_LOCATION=/etc/kafbat/config.yml
       KAFKA_CLUSTERS_0_NAME: mycluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker1A:9092,broker2A:9093
+      KAFKA_CLUSTERS_1_ZOOKEEPER: zookeeperA:32181
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registryA:8081
       KAFKA_CLUSTERS_1_NAME: othercluster
       KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: broker1B:9192,broker2B:9193
+      KAFKA_CLUSTERS_1_ZOOKEEPER: zookeeperB:32181
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registryB:8081
     depends_on:
       - broker1A
       - broker2A
